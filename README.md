@@ -1,2 +1,3 @@
-# CSE231-Programming-Assignment-1
-Assignment related to Operating System
+# CSE231-Programming-Assignment
+This repo contains all the assignemnts related to operating system course
+
