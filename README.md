@@ -510,8 +510,3 @@ Screen Output
 
 ---
 
-# Author
-
-**Aman Pal**
-
-CSE231 – Operating Systems
