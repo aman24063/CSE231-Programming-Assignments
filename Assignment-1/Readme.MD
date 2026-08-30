@@ -153,8 +153,6 @@ Expected output:
 User _start return value = 120
 ```
 
-![without-bonus terminal output](./part-a-without-bonus.png)
-
 ---
 
 ## Part A – Bonus
@@ -266,8 +264,6 @@ Expected output:
 User _start return value = 120
 ```
 
-![with-bonus terminal output](./part-a-with-bonus.png)
-
 ---
 
 # Part B – x86 Bootloader
@@ -364,8 +360,6 @@ The QEMU window should display:
 ```text
 Hello from my bootloader!
 ```
-
-![QEMU bootloader output](./part-b-bootloader.png)
 
 ---
 
