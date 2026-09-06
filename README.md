@@ -1,1 +1,1 @@
-This repo contains all the assignment related to operating system(CSE231).
+This repo contains all the assignments related to Operating System(CSE231).
