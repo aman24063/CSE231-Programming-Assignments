@@ -1,21 +1,206 @@
-# CSE231 PA2: Adding System Calls to xv6 (RISC-V)
+# CSE231 – Programming Assignment 2
+## Adding System Calls to xv6 (RISC-V)
 
-Adds five system calls and a bonus `pstree` utility to xv6-riscv.
+This directory contains my implementation of **CSE231 – Operating Systems Programming Assignment 2**.
 
-## System calls
+The assignment covers extending the **xv6-riscv** kernel with new system calls through:
 
-| Syscall | Number | What it does |
+- **Q1:** `getuptime()`
+- **Q2:** `activecount()`
+- **Q3:** `lineage(pid)`
+- **Q4:** `getprocsize(pid)`
+- **Q5:** `familyheadcount(int)`
+- **Bonus:** `pstree` process tree visualizer (with the supporting `getprocinfo()` system call)
+
+---
+
+## Objective
+
+The objective is to add new system calls to xv6 and expose kernel information (tick counter, process table, parent links, memory size) to user programs safely, using the kernel's locking rules.
+
+Only the files that were changed or added are included here, with their original relative paths (`kernel/...`, `user/...`, `Makefile`). They are meant to be copied over a clean xv6-riscv tree.
+
+### Life of a System Call
+
+```text
+user program: getuptime()
+     |
+     v
+stub generated from user/usys.pl
+     |
+     +--> li a7, SYS_getuptime
+     +--> ecall
+     |
+     v
+uservec (trampoline) --> usertrap() (trap.c)
+     |
+     v
+syscall() (syscall.c)
+     |
+     +--> read call number from a7
+     +--> index syscalls[] table
+     +--> call sys_getuptime()
+     |
+     v
+return value stored in a0
+     |
+     v
+user program resumes with the result
+```
+
+---
+
+## System Calls
+
+| Syscall | Number | Description |
 |---|---|---|
 | `int getuptime(void)` | 23 | Returns timer ticks since boot, read under `tickslock` |
 | `int activecount(void)` | 24 | Counts processes whose state is not `UNUSED` |
-| `int lineage(int pid)` | 25 | Prints `PID x: name` from the process up to init; returns the count, or -1 if the PID is not active |
+| `int lineage(int pid)` | 25 | Prints `PID x: name` from the process up to init; returns the number printed, or -1 if the PID is not active |
 | `int getprocsize(int pid)` | 26 | Returns `p->sz` in bytes, or -1 if the PID is missing or `UNUSED` |
 | `int familyheadcount(int)` | 27 | Counts the caller's children that are not `UNUSED` or `ZOMBIE` |
 | `int getprocinfo(struct procinfo*, int)` | 28 | Bonus: copies a snapshot of active processes to user space |
 
-Numbers start at 23 because this xv6 tree already uses 22 for `sync`.
+Numbering starts at 23 because this xv6 tree already uses 22 for `sync`.
 
-## Files changed or added
+### Q1 – getuptime()
+
+```text
+acquire(&tickslock)
+     |
+     v
+copy ticks into a local variable
+     |
+     v
+release(&tickslock)
+     |
+     v
+return the local copy
+```
+
+### Q2 – activecount()
+
+```text
+for each slot in proc[NPROC]
+     |
+     +--> acquire(&p->lock)
+     +--> if state != UNUSED: count++
+     +--> release(&p->lock)
+     |
+     v
+return count
+```
+
+### Q3 – lineage(pid)
+
+```text
+find process with matching pid (state != UNUSED)
+     |
+     +--> not found: return -1
+     |
+     v
+loop:
+     +--> acquire(&wait_lock), acquire(&cur->lock)
+     +--> if UNUSED: stop (broken chain)
+     +--> copy pid, name (safestrcpy), parent pointer
+     +--> release locks
+     +--> print "PID x: name"
+     +--> if pid == 1: stop
+     +--> cur = parent
+     |
+     v
+return number of lines printed
+```
+
+### Q4 – getprocsize(pid)
+
+```text
+for each slot in proc[NPROC]
+     |
+     +--> acquire(&p->lock)
+     +--> if pid matches and state != UNUSED:
+     |        copy p->sz, release, return it
+     +--> release(&p->lock)
+     |
+     v
+return -1
+```
+
+### Q5 – familyheadcount()
+
+```text
+me = myproc()
+acquire(&wait_lock)
+     |
+     v
+for each slot in proc[NPROC]
+     +--> acquire(&p->lock)
+     +--> if p->parent == me and state is not UNUSED/ZOMBIE: count++
+     +--> release(&p->lock)
+     |
+     v
+release(&wait_lock)
+return count
+```
+
+---
+
+## Bonus – pstree
+
+User space cannot read kernel memory, so the kernel copies a snapshot of each process into a user-provided array.
+
+### Execution Flow
+
+```text
+pstree (user program)
+     |
+     v
+getprocinfo(buf, NPROC)
+     |
+     v
+kernel: for each active process
+     +--> lock, copy pid / ppid / sz / name into a local struct
+     +--> release locks
+     +--> copyout() to the user buffer
+     |
+     v
+pstree: find pid 1, then print children recursively
+        (children of X = entries whose ppid == X.pid)
+```
+
+### Supported Flags
+
+```text
+pstree          names only
+pstree -p       names with PIDs
+pstree -m       names with memory size
+pstree -p -m    names with PIDs and memory size
+pstree -pm      same as -p -m
+pstree -mp      same as -p -m
+```
+
+---
+
+## Directory Structure
+
+```text
+Assignment-2/
+├── Makefile
+├── kernel/
+│   ├── syscall.h
+│   ├── syscall.c
+│   ├── sysproc.c
+│   └── procinfo.h
+├── user/
+│   ├── usys.pl
+│   ├── user.h
+│   ├── test.c
+│   └── pstree.c
+├── 73_PA2.zip
+└── README.md
+```
+
+### Files Changed or Added
 
 | File | Change |
 |---|---|
@@ -26,63 +211,141 @@ Numbers start at 23 because this xv6 tree already uses 22 for `sync`.
 | `user/usys.pl` | User-space stubs |
 | `user/user.h` | Prototypes |
 | `user/test.c` | New: the provided test program |
-| `user/pstree.c` | New: bonus process tree utility |
+| `user/pstree.c` | New: bonus utility |
 | `Makefile` | `_test` and `_pstree` added to `UPROGS` |
 
-## Design notes
+---
 
-1. **Locking.** Each `p->lock` is held for one process at a time. `p->parent` is protected by the global `wait_lock`, so `lineage`, `familyheadcount` and `getprocinfo` take `wait_lock` first, then `p->lock`, the same order as `wait()`.
-2. **Snapshots.** Values are copied into locals while locked, then the locks are released. In `lineage`, printing happens only after release.
-3. **`getprocinfo`.** User space cannot read kernel memory, so the kernel fills a local `struct procinfo` per process and calls `copyout` with no spinlock held. `pstree` builds the tree from the `pid` and `ppid` fields.
-4. **`extern`, not `#include`.** Kernel globals (`ticks`, `tickslock`, `proc`, `wait_lock`) are reached with `extern` to avoid multiple-definition link errors.
+## Build
 
-## This xv6 tree differs from stock xv6
+The code was built using the course Docker image `arghyadipchak/xv6-riscv-devbox:latest`.
 
-1. The kernel print function is `printk`, not `printf`.
-2. `copyout` takes an extra `psz` argument: `copyout(pagetable, psz, dstva, src, len)`.
+```bash
+git clone https://github.com/mit-pdos/xv6-riscv.git
+cd xv6-riscv
+# copy the files from Assignment-2/ over the tree, keeping paths
+make clean
+make qemu CPUS=3
+```
 
-The code uses these forms. A different xv6 base may need those calls adjusted.
+### Notes About This xv6 Tree
 
-## Build and run
+This tree differs from stock xv6, and the code uses these forms:
 
-Built with the course Docker image `arghyadipchak/xv6-riscv-devbox:latest`.
+```text
+printk(...)                                   instead of printf(...) in the kernel
+copyout(pagetable, psz, dstva, src, len)      one extra psz argument
+```
 
-    make clean
-    make qemu CPUS=3
+A different xv6 base may need those calls adjusted.
 
-At the `$` prompt, run `test` and `pstree`. Quit QEMU with Ctrl+A, then X.
+---
 
-## Observed output of `test`
+## Run
+
+At the `$` prompt:
+
+```text
+test
+pstree
+pstree -p
+pstree -m
+pstree -p -m
+```
+
+Quit QEMU with `Ctrl+A`, then `X`.
+
+### Observed Output of test
 
 Tick counts and PIDs vary between runs.
 
-    System has been running for 471 ticks
-    Number of active processes = 3
-    My PID is : 3
-    PID 3: test
-    PID 2: sh
-    PID 1: init
-    Count of Ancestors: 3
-    Active children before exit: 5
-    Active children after exit: 0
-    Memory size of process 3: 16384 bytes
+```text
+System has been running for 471 ticks
+Number of active processes = 3
+My PID is : 3
+PID 3: test
+PID 2: sh
+PID 1: init
+Count of Ancestors: 3
+Active children before exit: 5
+Active children after exit: 0
+Memory size of process 3: 16384 bytes
+```
 
-## Bonus: `pstree`
+### Observed Output of pstree
 
-Supported flags: none, `-p`, `-m`, `-p -m`, `-pm`, `-mp`.
+```text
+$ pstree -p -m
+init(1) [16384B]
+|- sh(2) [20480B]
+   |- pstree(7) [16384B]
+```
 
-    $ pstree -p -m
-    init(1) [16384B]
-    |- sh(2) [20480B]
-       |- pstree(7) [16384B]
+`pstree` appears under `sh` because `sh` forks it, so this is the real parent-child tree. Sizes and PIDs depend on the build and the run.
 
-`pstree` appears under `sh` because `sh` forks it, so this is the real parent-child tree. Sizes depend on the build.
+---
 
-## Known limitation
+## Locking Rules Used
+
+```text
+p->lock      protects state, pid, sz, name of one process
+wait_lock    protects p->parent (global lock)
+
+Order:  wait_lock first, then p->lock   (same as wait())
+Rule:   never call copyout() or printk() while holding a spinlock
+```
+
+---
+
+## Technologies Used
+
+- C
+- xv6-riscv
+- RISC-V
+- QEMU
+- Docker
+- GNU Make
+- Perl (`usys.pl`)
+- Git
+
+---
+
+## Key Concepts
+
+- System call path: `ecall`, trap, `syscall()`, dispatch table
+- Registers `a0` to `a7` for arguments and call number
+- Process table and `struct proc`
+- Process states (`UNUSED`, `ZOMBIE`, and others)
+- Spinlocks and lock ordering
+- `extern` versus `#include` for kernel globals
+- `copyout()` for kernel-to-user data transfer
+- Parent-child relationships and zombie processes
+- Makefile `UPROGS`
+
+---
+
+## Known Limitation
 
 In `lineage`, the parent pointer is followed after the locks are released. If the parent exits and its slot is reused in that short window, the walk could print a different process. An `UNUSED` slot is detected, but a reused one is not.
 
-## Submission
+---
 
-`73_PA2.zip` is the exact zip submitted on Google Classroom (Group 73).
-EOF
+## Overall Learning
+
+```text
+user stub (usys.pl)
+      |
+      v
+ecall --> trap --> syscall()
+      |
+      v
+syscalls[] table --> sys_xxx()
+      |
+      v
+lock, read kernel data, unlock
+      |
+      v
+return value in a0 --> user program
+```
+
+---
