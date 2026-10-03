@@ -1,7 +1,7 @@
 # CSE231 – Programming Assignment 2
 ## Adding System Calls to xv6 (RISC-V)
 
-This directory contains my implementation of **CSE231 – Operating Systems Programming Assignment 2**.
+This directory contains my implementation of **CSE231 – Operating Systems Programming Assignment 2**. The assignment statement is included as `PA2-syscall-1.pdf`.
 
 The assignment covers extending the **xv6-riscv** kernel with new system calls through:
 
@@ -11,6 +11,21 @@ The assignment covers extending the **xv6-riscv** kernel with new system calls t
 - **Q4:** `getprocsize(pid)`
 - **Q5:** `familyheadcount(int)`
 - **Bonus:** `pstree` process tree visualizer (with the supporting `getprocinfo()` system call)
+
+---
+
+## Assignment Details
+
+| Item | Value |
+|---|---|
+| Due date | Oct 3, 2026 |
+| Weightage | 10 marks |
+| Q1 `getuptime()` | 15% |
+| Q2 `activecount()` | 15% |
+| Q3 `lineage()` | 25% |
+| Q4 `getprocsize()` | 20% |
+| Q5 `familyheadcount()` | 25% |
+| Bonus `pstree` | 1 additional mark |
 
 ---
 
@@ -112,6 +127,8 @@ loop:
 return number of lines printed
 ```
 
+The pid argument is read with `argint`, and the name is copied into a fixed 16-character buffer.
+
 ### Q4 – getprocsize(pid)
 
 ```text
@@ -142,6 +159,34 @@ for each slot in proc[NPROC]
 release(&wait_lock)
 return count
 ```
+
+The `int` argument in the prototype `familyheadcount(int)` is not used. The assignment says the call counts the children of the calling process, so the kernel uses `myproc()`.
+
+---
+
+## Requirements Checklist
+
+| Requirement from the assignment | How it is met |
+|---|---|
+| Q1: return the existing tick counter, no new state | Reads `ticks` from `trap.c` using `extern` |
+| Q1: access the counter under its existing lock | `acquire(&tickslock)` and `release(&tickslock)` |
+| Q2: count processes not in `UNUSED` | Loop over `proc[NPROC]` |
+| Q2: do not modify any process state, lock each process | Read-only loop with `p->lock` per slot |
+| Q3: print ancestry from the process up to PID 1 | Walks the `parent` chain, stops at pid 1 |
+| Q3: return the count, or -1 for an inactive PID | Returns `count`, or -1 if the lookup fails |
+| Q3: hold at most one process lock at a time | One `p->lock` at a time; the global `wait_lock` is also taken because it protects `parent` |
+| Q3: handle a PID that vanishes, do not walk past `UNUSED` | `UNUSED` check inside the walk loop |
+| Q3 hints: `safestrcpy`, fixed name length, `argint` | All used |
+| Q4: return `p->sz`, or -1 if missing or `UNUSED` | Read under `p->lock` before release |
+| Q4: hold at most one process lock | One `p->lock` per iteration |
+| Q5: count active children, exclude zombies | `parent == me` and state not `UNUSED` or `ZOMBIE` |
+| `extern` for symbols outside `sysproc.c`, no `#include` of `.c` files | `extern` for `ticks`, `tickslock`, `proc`, `wait_lock` |
+| Include `test.c` and add it to the Makefile | `user/test.c` added as `$U/_test` in `UPROGS` |
+| `test.c` runs after all system calls exist | It calls all five, and its output matches the expected output |
+| `test.c` uses the corrected name `familyheadcount` | Verified: `getfamilyheadcount` appears nowhere |
+| Bonus: `pstree`, `-p`, `-m`, `-p -m`, `-pm`, `-mp` | All forms tested |
+| Clean `make` must build | Verified with `make clean` then `make` |
+| Submit one zip, every changed file, paths preserved | `73_PA2.zip` with 9 files, submitted on Google Classroom |
 
 ---
 
@@ -182,6 +227,7 @@ pstree -mp      same as -p -m
 ---
 
 ## Directory Structure
+
 ```text
 Assignment-2/
 ├── Makefile
@@ -195,9 +241,9 @@ Assignment-2/
 │   ├── user.h
 │   ├── test.c
 │   └── pstree.c
+├── PA2-syscall-1.pdf
 └── Readme.MD
 ```
-
 
 ### Files Changed or Added
 
@@ -212,6 +258,7 @@ Assignment-2/
 | `user/test.c` | New: the provided test program |
 | `user/pstree.c` | New: bonus utility |
 | `Makefile` | `_test` and `_pstree` added to `UPROGS` |
+| `PA2-syscall-1.pdf` | The assignment statement |
 
 ---
 
@@ -280,7 +327,10 @@ init(1) [16384B]
    |- pstree(7) [16384B]
 ```
 
-`pstree` appears under `sh` because `sh` forks it, so this is the real parent-child tree. Sizes and PIDs depend on the build and the run.
+### Differences From the Example in the Assignment
+
+1. The assignment's example shows `sh` and `pstree` side by side under `init`. Here `pstree` appears under `sh`, because `sh` forks it, so this is the real parent-child tree.
+2. The memory sizes and PIDs in the assignment's example are illustrative. Real values depend on the build and the run.
 
 ---
 
@@ -348,3 +398,7 @@ return value in a0 --> user program
 ```
 
 ---
+
+## Submission
+
+The files in this directory are the same ones submitted as a single zip, `73_PA2.zip`, on Google Classroom (Group 73). The zip contains every changed file with its relative path preserved (`kernel/...`, `user/...`, `Makefile`).
