@@ -278,3 +278,109 @@ At the `$` prompt:
 
 ```text
 test
+pstree
+pstree -p
+pstree -m
+pstree -p -m
+```
+
+Quit QEMU with `Ctrl+A`, then `X`.
+
+### Observed Output of test
+
+Tick counts and PIDs vary between runs.
+
+```text
+System has been running for 471 ticks
+Number of active processes = 3
+My PID is : 3
+PID 3: test
+PID 2: sh
+PID 1: init
+Count of Ancestors: 3
+Active children before exit: 5
+Active children after exit: 0
+Memory size of process 3: 16384 bytes
+```
+
+### Observed Output of pstree
+
+```text
+$ pstree -p -m
+init(1) [16384B]
+|- sh(2) [20480B]
+   |- pstree(7) [16384B]
+```
+
+### Differences From the Example in the Assignment
+
+1. The assignment's example shows `sh` and `pstree` side by side under `init`. Here `pstree` appears under `sh`, because `sh` forks it, so this is the real parent-child tree.
+2. The memory sizes and PIDs in the assignment's example are illustrative. Real values depend on the build and the run.
+
+---
+
+## Locking Rules Used
+
+```text
+p->lock      protects state, pid, sz, name of one process
+wait_lock    protects p->parent (global lock)
+
+Order:  wait_lock first, then p->lock   (same as wait())
+Rule:   never call copyout() or printk() while holding a spinlock
+```
+
+---
+
+## Technologies Used
+
+- C
+- xv6-riscv
+- RISC-V
+- QEMU
+- Docker
+- GNU Make
+- Perl (`usys.pl`)
+- Git
+
+---
+
+## Key Concepts
+
+- System call path: `ecall`, trap, `syscall()`, dispatch table
+- Registers `a0` to `a7` for arguments and call number
+- Process table and `struct proc`
+- Process states (`UNUSED`, `ZOMBIE`, and others)
+- Spinlocks and lock ordering
+- `extern` versus `#include` for kernel globals
+- `copyout()` for kernel-to-user data transfer
+- Parent-child relationships and zombie processes
+- Makefile `UPROGS`
+
+---
+
+## Known Limitation
+
+In `lineage`, the parent pointer is followed after the locks are released. If the parent exits and its slot is reused in that short window, the walk could print a different process. An `UNUSED` slot is detected, but a reused one is not.
+
+---
+
+## Overall Learning
+
+```text
+user stub (usys.pl)
+      |
+      v
+ecall --> trap --> syscall()
+      |
+      v
+syscalls[] table --> sys_xxx()
+      |
+      v
+lock, read kernel data, unlock
+      |
+      v
+return value in a0 --> user program
+```
+
+---
+
