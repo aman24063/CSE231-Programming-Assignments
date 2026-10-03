@@ -112,7 +112,7 @@ loop:
 return number of lines printed
 ```
 
-The pid argument is read with `argint`, and the name is copied into a fixed 16-character buffer.
+The pid argument is read with `argint`, and the name is copied into a fixed 16-byte buffer (15 characters plus the terminating NUL).
 
 ### Q4 – getprocsize(pid)
 
@@ -261,7 +261,7 @@ make qemu CPUS=3
 
 ### Notes About This xv6 Tree
 
-This tree differs from stock xv6, and the code uses these forms:
+This tree uses the following forms, and the code relies on them:
 
 ```text
 printk(...)                                   instead of printf(...) in the kernel
@@ -309,24 +309,26 @@ Memory size of process 3: 16384 bytes
 $ pstree -p -m
 init(1) [16384B]
 |- sh(2) [20480B]
-   |- pstree(7) [16384B]
+   |- pstree(6) [16384B]
 ```
 
 ### Differences From the Example in the Assignment
 
 1. The assignment's example shows `sh` and `pstree` side by side under `init`. Here `pstree` appears under `sh`, because `sh` forks it, so this is the real parent-child tree.
-2. The memory sizes and PIDs in the assignment's example are illustrative. Real values depend on the build and the run.
+2. The memory sizes and PIDs differ from the assignment's example (for example `init` is 16384B here, versus 12288B there). They depend on the build and the run.
 
 ---
 
 ## Locking Rules Used
 
 ```text
-p->lock      protects state, pid, sz, name of one process
+p->lock      protects state, pid and related fields of one process
+             (sz and name are private to the process in xv6, but this code
+             reads them while holding p->lock, as the assignment requires)
 wait_lock    protects p->parent (global lock)
 
 Order:  wait_lock first, then p->lock   (same as wait())
-Rule:   never call copyout() or printk() while holding a spinlock
+Design: copyout() and printk() are called after the locks are released
 ```
 
 ---
@@ -383,4 +385,3 @@ return value in a0 --> user program
 ```
 
 ---
-
