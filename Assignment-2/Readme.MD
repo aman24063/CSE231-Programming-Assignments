@@ -1,4 +1,3 @@
-cat > Assignment-2/README.md << 'EOF'
 # CSE231 PA2: Adding System Calls to xv6 (RISC-V)
 
 Adds five system calls and a bonus `pstree` utility to xv6-riscv.
