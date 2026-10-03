@@ -182,7 +182,6 @@ pstree -mp      same as -p -m
 ---
 
 ## Directory Structure
-
 ```text
 Assignment-2/
 ├── Makefile
@@ -196,9 +195,9 @@ Assignment-2/
 │   ├── user.h
 │   ├── test.c
 │   └── pstree.c
-├── 73_PA2.zip
-└── README.md
+└── Readme.MD
 ```
+
 
 ### Files Changed or Added
 
