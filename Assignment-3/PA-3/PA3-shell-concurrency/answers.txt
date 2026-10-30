@@ -1,0 +1,41 @@
+Programming Assignment: Processes, Threads, and Synchronization
+Name:
+Roll number:
+
+A-Q1. Why should execvp() normally be called in the child rather than the shell process?
+
+
+A-Q2. Why must cd be implemented by the shell process itself rather than by a forked child?
+
+
+A-Q3. What problem can arise if the parent never waits for terminated child processes?
+
+
+B-Q1. Decompose total_jobs++ into conceptual load/modify/store steps. Why is it not an indivisible operation?
+
+
+B-Q2. Give an interleaving of two threads that loses one increment.
+
+
+B-Q3. Why can the unsafe program sometimes appear to produce the expected result?
+
+
+C-Q1. Why must queue head, tail, and count be protected by the same mutex?
+
+
+C-Q2. Why must releasing the mutex and sleeping in pthread_cond_wait() behave atomically?
+
+
+C-Q3. Why must the condition around pthread_cond_wait() be checked with while rather than if?
+
+
+C-Q4. Why is pthread_cond_broadcast() appropriate during queue shutdown?
+
+
+C-Q5. Why is a condition variable preferable to busy waiting when the queue is empty for a long time?
+
+
+C-Q6. Why can per-worker jobs_completed counters reduce synchronization overhead compared with one shared global counter?
+
+
+BONUS-Q. If you attempt the bonus, explain why queue_shutdown() must occur only after ALL producer threads have terminated.
