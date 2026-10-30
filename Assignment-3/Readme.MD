@@ -18,22 +18,31 @@ Parts B and C tell one story, from shared state to a race, then a mutex, then a 
 ## Directory structure
 
 ```
-.
-├── Makefile              builds all three programs
-├── answers.txt           answers to the reasoning questions (A-Q1 … C-Q6, BONUS-Q)
-├── A/
-│   └── minishell.c       Part A: the shell
-├── B/
-│   └── thread_counter.c  Part B (unsafe counter) + Part C1/C2 (mutex fix)
-└── C/
-    ├── job_queue.h       bounded queue API
-    ├── job_queue.c       bounded queue (mutex + 2 condition variables)
-    └── print_server.c    print server: 4 printer threads + core / bonus modes
+Assignment-3/
+├── README.md                     this file
+├── 73_PA3.zip                    submitted zip (group 73)
+└── PA-3/
+    └── PA3-shell-concurrency/    ← the project; run every command from here
+        ├── Makefile              builds all three programs
+        ├── answers.txt           answers to the reasoning questions
+        ├── README.txt            original starter-code readme
+        ├── PA3-shell-concurrency.docx   assignment handout
+        ├── A/
+        │   └── minishell.c       Part A: the shell
+        ├── B/
+        │   └── thread_counter.c  Part B (unsafe counter) + Part C1/C2 (mutex fix)
+        └── C/
+            ├── job_queue.h       bounded queue API
+            ├── job_queue.c       bounded queue (mutex + 2 condition variables)
+            └── print_server.c    print server: 4 printer threads + core / bonus modes
 ```
 
 ## Building
 
+All commands in this README are run from the project folder:
+
 ```bash
+cd PA-3/PA3-shell-concurrency
 make          # builds A/msh, B/thread_counter, C/print_server
 make clean    # removes the binaries
 ```
@@ -198,7 +207,7 @@ Which printer handles which job, and how the lines interleave, is deliberately l
 | Valgrind memcheck | 0 errors, 0 bytes leaked |
 | Valgrind Helgrind | Only false positives inside glibc's `printf` (stdout uses an internal lock Helgrind can't see) |
 
-To reproduce the race-detector check:
+To reproduce the race-detector check (from the project folder):
 
 ```bash
 gcc -std=c11 -O1 -g -D_POSIX_C_SOURCE=200809L -pthread -fsanitize=thread \
@@ -209,7 +218,7 @@ gcc -std=c11 -O1 -g -D_POSIX_C_SOURCE=200809L -pthread -fsanitize=thread \
 
 ## Reasoning questions
 
-Answers to all core questions and BONUS-Q are in [`answers.txt`](answers.txt):
+Answers to all core questions and BONUS-Q are in [`answers.txt`](PA-3/PA3-shell-concurrency/answers.txt):
 
 - **A-Q1–A-Q3:** why `execvp` runs in the child, why `cd` must be a built-in, zombies
 - **B-Q1–B-Q3:** load/modify/store, a lost-update interleaving, why a race can still look correct
