@@ -1,6 +1,5 @@
 # CSE231 PA3: A Shell and a Threaded Print Service
 
-**Group 73** · Aman Pal (2024063)
 
 This assignment has three parts:
 
