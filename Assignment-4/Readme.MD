@@ -6,6 +6,23 @@ This folder holds only the files that were changed or added. Copy them over a fr
 
 ---
 
+## Folder layout
+
+```
+Assignment-4/
+├── kernel/                     modified xv6 kernel files (the solution)
+├── user/                       user-side changes, test programs and xtop
+├── Makefile                    xv6 Makefile with the new programs added
+├── PA4-scheduling.docx         assignment problem statement
+├── PA4_handout-20261112T022716Z-1-001/
+│   └── PA4_handout/            original handout: schedinfo.h and the 6 test programs, unmodified
+└── Readme.MD                   this file
+```
+
+Only `kernel/`, `user/` and `Makefile` are needed to build. The handout folder is kept for reference, and its files are already included in `kernel/` and `user/`.
+
+---
+
 ## Contents
 
 | Question | Feature | System calls | Test program |
